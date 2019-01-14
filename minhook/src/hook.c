@@ -718,12 +718,12 @@ MH_STATUS WINAPI MH_ApplyQueued(VOID) {
 
 //-------------------------------------------------------------------------
 MH_STATUS WINAPI MH_CreateHookApiEx(
-	LPCWSTR pszModule, LPCSTR pszProcName, LPVOID pDetour,
+	LPCSTR pszModule, LPCSTR pszProcName, LPVOID pDetour,
 	LPVOID *ppOriginal, LPVOID *ppTarget, LPVOID ud) {
 	HMODULE hModule;
 	LPVOID pTarget;
 
-	hModule = GetModuleHandleW(pszModule);
+	hModule = GetModuleHandleA(pszModule);
 	if (hModule == NULL)
 		return MH_ERROR_MODULE_NOT_FOUND;
 
@@ -739,7 +739,7 @@ MH_STATUS WINAPI MH_CreateHookApiEx(
 
 //-------------------------------------------------------------------------
 MH_STATUS WINAPI MH_CreateHookApi(
-	LPCWSTR pszModule, LPCSTR pszProcName, LPVOID pDetour, LPVOID *ppOriginal, LPVOID ud) {
+	LPCSTR pszModule, LPCSTR pszProcName, LPVOID pDetour, LPVOID *ppOriginal, LPVOID ud) {
 	return MH_CreateHookApiEx(pszModule, pszProcName, pDetour, ppOriginal, NULL, ud);
 }
 

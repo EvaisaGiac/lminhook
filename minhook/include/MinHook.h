@@ -122,7 +122,7 @@ extern "C"
     //                    used to call the original target function.
     //                    This parameter can be NULL.
     MH_STATUS WINAPI MH_CreateHookApi(
-        LPCWSTR pszModule, LPCSTR pszProcName, LPVOID pDetour, LPVOID *ppOriginal, LPVOID ud);
+        LPCSTR pszModule, LPCSTR pszProcName, LPVOID pDetour, LPVOID *ppOriginal, LPVOID ud);
 
     // Creates a Hook for the specified API function, in disabled state.
     // Parameters:
@@ -139,7 +139,7 @@ extern "C"
     //                    with other functions.
     //                    This parameter can be NULL.
     MH_STATUS WINAPI MH_CreateHookApiEx(
-        LPCWSTR pszModule, LPCSTR pszProcName, LPVOID pDetour, LPVOID *ppOriginal, LPVOID *ppTarget, LPVOID ud);
+        LPCSTR pszModule, LPCSTR pszProcName, LPVOID pDetour, LPVOID *ppOriginal, LPVOID *ppTarget, LPVOID ud);
 
     // Removes an already created hook.
     // Parameters:
