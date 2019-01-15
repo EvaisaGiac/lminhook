@@ -1,6 +1,7 @@
 ﻿#include <MinHook.h>
 #include "lminhook.h"
 #include <assert.h>
+#include <string>
 LPVOID get_cdecl_cb(int nparams);
 LPVOID get_stdcall_cb(int nparams);
 
@@ -69,7 +70,9 @@ static int luninitialize(lua_State *L) {
 }
 
 static int lcreatehook(lua_State *L) {
-	auto target = luaL_checkinteger(L, 1);
+	if (!lua_isinteger(L, 1) && !lua_isstring(L, 1)) {
+		luaL_error(L, "invalid hook address");
+	}
 	auto nparams = luaL_checkinteger(L, 2);
 	int calltype = cdecl_type;
 	if (lua_isnumber(L, 3)) {
@@ -84,7 +87,21 @@ static int lcreatehook(lua_State *L) {
 		luaL_error(L, "invalid params count %d with call type %s", nparams, call_type_str(calltype));
 	}
 	hook *h = (hook*)lua_newuserdata(L, sizeof(hook));
-	MH_STATUS s = MH_CreateHook((LPVOID)target, pDetour, &pOriginal, h);
+	MH_STATUS s;
+	LPVOID target;
+	if (lua_isinteger(L, 1)) {
+		target = (LPVOID)luaL_checkinteger(L, 1);
+		s = MH_CreateHook((LPVOID)target, pDetour, &pOriginal, h);
+	} else {
+		size_t len = 0;
+		const char *p = lua_tolstring(L, 1, &len);
+		const char *pp = strchr(p, ':');
+		if (pp == NULL) {
+			luaL_error(L, "invalid hook address");
+		}
+		std::string moduleName(p, pp - p), funcName(pp + 1);
+		s = MH_CreateHookApiEx(moduleName.c_str(), funcName.c_str(), pDetour, &pOriginal, &target, h);
+	}
 	if (s == MH_OK) {
 		h->nparams = nparams;
 		h->calltype = calltype;
