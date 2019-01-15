@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <windows.h>
+#include <lua.hpp>
 
 #define cdecl_type 0
 #define stdcall_type 1
@@ -10,6 +11,8 @@ struct hook {
 	LPVOID pOriginal;
 	int nparams;
 	int calltype;
+	int callbackRef;
+	lua_State *L;
 };
 
 #pragma code_seg(".h")

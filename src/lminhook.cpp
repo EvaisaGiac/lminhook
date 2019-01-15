@@ -1,5 +1,4 @@
-﻿#include <lua.hpp>
-#include <MinHook.h>
+﻿#include <MinHook.h>
 #include "lminhook.h"
 #include <assert.h>
 LPVOID get_cdecl_cb(int nparams);
@@ -91,6 +90,9 @@ static int lcreatehook(lua_State *L) {
 		h->calltype = calltype;
 		h->pOriginal = pOriginal;
 		h->pTarget = (LPVOID)target;
+		h->L = L;
+		lua_pushvalue(L, lua_isnumber(L, 3) ? 4 : 3);
+		h->callbackRef = luaL_ref(L, LUA_REGISTRYINDEX);
 		minhook_meta(L);
 		return 1;
 	}

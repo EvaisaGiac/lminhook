@@ -27,7 +27,7 @@ const char *test_code = " \
 	local f = function(ct, ...) return ct, {...} end \
 	local calltype, args = f(...) \
 	for i, v in ipairs(args) do \
-		local h = t.create(v, i - 1, calltype, function() end) \
+		local h = t.create(v, i - 1, calltype, function(...) print(1111, ...) end) \
 		table.insert(test_hooks, h) \
 		h:hook() \
 	end \
