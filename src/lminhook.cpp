@@ -2,6 +2,7 @@
 #include "lminhook.h"
 #include <assert.h>
 #include <string>
+#include "kmpFind.h"
 LPVOID get_cdecl_cb(int nparams);
 LPVOID get_stdcall_cb(int nparams);
 
@@ -34,6 +35,7 @@ static int lunhook(lua_State *L) {
 	hook *h = (hook *)lua_touserdata(L, 1);
 	if (h != NULL) {
 		MH_DisableHook(h->pTarget);
+		luaL_unref(L, LUA_REGISTRYINDEX, h->callbackRef);
 	}
 	return 0;
 }
@@ -116,12 +118,26 @@ static int lcreatehook(lua_State *L) {
 	lua_pop(L, 1);
 	return 0;
 }
+
+static int lkmdfind(lua_State *L) {
+	int startAddr = luaL_checkinteger(L, 1);
+	int nCount = luaL_checkinteger(L, 2);
+	const char *patn = luaL_checkstring(L, 3);
+	int pos = kmpFind::Find((const unsigned char *)startAddr, nCount, patn);
+	if (pos >= 0) {
+		lua_pushinteger(L, pos + startAddr);
+		return 1;
+	}
+	return 0;
+}
+
 extern "C" LUAMOD_API int luaopen_minhook(lua_State *L) {
 	luaL_checkversion(L);
 	luaL_Reg l[] = {
 		{ "initialize", linitialize },
 		{ "uninitialize", luninitialize },
 		{ "create", lcreatehook },
+		{ "kmdfind", lkmdfind },
 		{ NULL, NULL },
 	};
 	luaL_newlib(L, l);
