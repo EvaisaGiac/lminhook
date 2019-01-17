@@ -18,6 +18,9 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{48f82a03-21bc-4c30-ba39-67df3224b0b6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\minhook\include\MinHook.h">
@@ -45,10 +48,13 @@
       <Filter>minhook\src\hde</Filter>
     </ClInclude>
     <ClInclude Include="..\src\lminhook.h">
-      <Filter>src</Filter>
+      <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\src\kmpFind.h">
-      <Filter>src</Filter>
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\callbacks.h">
+      <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -70,13 +76,10 @@
     <ClCompile Include="..\src\lminhook.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\cdecl_callbacks.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\stdcall_callbacks.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\kmpFind.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\callbacks.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
