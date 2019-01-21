@@ -70,12 +70,24 @@ static int lcalltype(lua_State *L) {
 	return 0;
 }
 
+static int lsetcallback(lua_State *L) {
+	hook *h = (hook *)lua_touserdata(L, 1);
+	luaL_checktype(L, 2, LUA_TFUNCTION);
+	if (h != NULL) {
+		luaL_unref(L, LUA_REGISTRYINDEX, h->callbackRef);
+		lua_pushvalue(L, 2);
+		h->callbackRef = luaL_ref(L, LUA_REGISTRYINDEX);
+	}
+	return 0;
+}
+
 static void minhook_meta(lua_State *L) {
 	if (luaL_newmetatable(L, "minhook")) {
 		luaL_Reg l[] = {
 			{ "hook", lhook },
 			{ "unhook", lunhook },
 			{ "calltype", lcalltype },
+			{ "setcallback", lsetcallback },
 			{ NULL, NULL },
 		};
 		luaL_newlib(L, l);
