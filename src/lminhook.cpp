@@ -114,6 +114,25 @@ static int luninitialize(lua_State *L) {
 	return 1;
 }
 
+static int lshowconsole(lua_State *L) {
+	// allocate a console for this app
+	if (AllocConsole()) {
+		AttachConsole(GetCurrentProcessId());
+		freopen("CON", "w", stdout);
+		freopen("CON", "w", stderr);
+		freopen("CON", "r", stdin);
+	}
+	return 0;
+}
+
+static int lhideconsole(lua_State *L) {
+	fclose(stdout);
+	fclose(stderr);
+	fclose(stdin);
+	FreeConsole();
+	return 0;
+}
+
 static void register_hook(hook *h) {
 	lua_State *L = h->L;
 	lua_getglobal(L, IDX_HOOK_REGISTER);
@@ -190,6 +209,8 @@ extern "C" LUAMOD_API int luaopen_minhook(lua_State *L) {
 		{ "uninitialize", luninitialize },
 		{ "create", lcreatehook },
 		{ "kmdfind", lkmdfind },
+		{"showconsole", lshowconsole},
+		{"hideconsole", lhideconsole},
 		{ NULL, NULL },
 	};
 	luaL_newlib(L, l);
