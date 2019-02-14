@@ -63,6 +63,7 @@ typedef struct _HOOK_ENTRY {
 	LPVOID pTarget;     // Address of the target function.
 	LPVOID pDetour;     // Address of the detour or relay function.
 	LPVOID pTrampoline; // Address of the trampoline function.
+	LPVOID pBuffer;
 	UINT8 backup[8];    // Original prologue of the target function.
 
 	UINT8 patchAbove : 1;  // Uses the hot patch area.
@@ -325,24 +326,32 @@ static MH_STATUS EnableHookLL(UINT pos, BOOL enable) {
 		return MH_ERROR_MEMORY_PROTECT;
 
 	if (enable) {
-		PJMP_REL pJmp = (PJMP_REL)pPatchTarget;
-		pJmp->opcode = 0xE9;
-		if (pHook->ud) {
-			pJmp->operand = (UINT32)((LPBYTE)pHook->pTrampoline - sizeof(UD_PUSH) - (pPatchTarget + sizeof(JMP_REL)));
+		if (pHook->nIP == 0) {
+			*(LPVOID *)pPatchTarget = pHook->pBuffer;
 		} else {
-			pJmp->operand = (UINT32)((LPBYTE)pHook->pDetour - (pPatchTarget + sizeof(JMP_REL)));
-		}
+			PJMP_REL pJmp = (PJMP_REL)pPatchTarget;
+			pJmp->opcode = 0xE9;
+			if (pHook->ud) {
+				pJmp->operand = (UINT32)((LPBYTE)pHook->pTrampoline - sizeof(UD_PUSH) - (pPatchTarget + sizeof(JMP_REL)));
+			} else {
+				pJmp->operand = (UINT32)((LPBYTE)pHook->pDetour - (pPatchTarget + sizeof(JMP_REL)));
+			}
 
-		if (pHook->patchAbove) {
-			PJMP_REL_SHORT pShortJmp = (PJMP_REL_SHORT)pHook->pTarget;
-			pShortJmp->opcode = 0xEB;
-			pShortJmp->operand = (UINT8)(0 - (sizeof(JMP_REL_SHORT) + sizeof(JMP_REL)));
+			if (pHook->patchAbove) {
+				PJMP_REL_SHORT pShortJmp = (PJMP_REL_SHORT)pHook->pTarget;
+				pShortJmp->opcode = 0xEB;
+				pShortJmp->operand = (UINT8)(0 - (sizeof(JMP_REL_SHORT) + sizeof(JMP_REL)));
+			}
 		}
 	} else {
-		if (pHook->patchAbove)
-			memcpy(pPatchTarget, pHook->backup, sizeof(JMP_REL) + sizeof(JMP_REL_SHORT));
-		else
-			memcpy(pPatchTarget, pHook->backup, sizeof(JMP_REL));
+		if (pHook->nIP == 0) {
+			*(LPVOID*)pPatchTarget = pHook->pTrampoline;
+		} else {
+			if (pHook->patchAbove)
+				memcpy(pPatchTarget, pHook->backup, sizeof(JMP_REL) + sizeof(JMP_REL_SHORT));
+			else
+				memcpy(pPatchTarget, pHook->backup, sizeof(JMP_REL));
+		}
 	}
 
 	VirtualProtect(pPatchTarget, patchSize, oldProtect, &oldProtect);
@@ -502,6 +511,7 @@ MH_STATUS WINAPI MH_CreateHook(LPVOID pTarget, LPVOID pDetour, LPVOID *ppOrigina
 					}
 					if (CreateTrampolineFunction(&ct)) {
 						PHOOK_ENTRY pHook = AddHookEntry();
+						pHook->pBuffer = NULL;
 						if (pHook != NULL) {
 							pHook->pTarget = ct.pTarget;
 #if defined(_M_X64) || defined(__x86_64__)
@@ -511,6 +521,7 @@ MH_STATUS WINAPI MH_CreateHook(LPVOID pTarget, LPVOID pDetour, LPVOID *ppOrigina
 #endif
 							pHook->ud = ud;
 							pHook->pTrampoline = ct.pTrampoline;
+							pHook->pBuffer = pBuffer;
 							pHook->patchAbove = ct.patchAbove;
 							pHook->isEnabled = FALSE;
 							pHook->queueEnable = FALSE;
@@ -560,6 +571,82 @@ MH_STATUS WINAPI MH_CreateHook(LPVOID pTarget, LPVOID pDetour, LPVOID *ppOrigina
 	return status;
 }
 
+MH_STATUS WINAPI MH_CreateHookFuncTable(LPVOID pTarget, LPVOID pDetour, LPVOID *ppOriginal, LPVOID ud) {
+	MH_STATUS status = MH_OK;
+
+	EnterSpinLock();
+
+	if (g_hHeap != NULL) {
+		if (IsExecutableAddress(*(LPVOID *)pTarget) && IsExecutableAddress(pDetour)) {
+			UINT pos = FindHookEntry(pTarget);
+			if (pos == INVALID_HOOK_POS) {
+				LPVOID pBuffer = AllocateBuffer(pTarget);
+				if (pBuffer != NULL) {
+					TRAMPOLINE ct;
+					ct.pTarget = pTarget;
+					ct.pDetour = pDetour;
+					if (ud) {
+						UD_PUSH *pp = (UD_PUSH *)pBuffer;
+						pp->i1 = 0xB850;
+						pp->ud = (UINT32)ud;
+						pp->i2 = 0x04E44487;
+						pp->i3 = 0x87;
+						pp->i4 = 0xE404;
+						PJMP_REL j = &pp->jmp;
+						j->opcode = 0xE9;
+						j->operand = (UINT32)((LPBYTE)pDetour - ((LPBYTE)j + sizeof(JMP_REL)));
+					} else {
+						FreeBuffer(pBuffer);
+						pBuffer = NULL;
+					}
+					ct.pTrampoline = *(LPVOID*)pTarget;
+					PHOOK_ENTRY pHook = AddHookEntry();
+					pHook->pBuffer = NULL;
+					ct.patchAbove = FALSE;
+					if (pHook != NULL) {
+						pHook->pTarget = ct.pTarget;
+#if defined(_M_X64) || defined(__x86_64__)
+						pHook->pDetour = ct.pRelay;
+#else
+						pHook->pDetour = ct.pDetour;
+#endif
+						pHook->ud = ud;
+						pHook->pTrampoline = ct.pTrampoline;
+						pHook->patchAbove = ct.patchAbove;
+						pHook->isEnabled = FALSE;
+						pHook->queueEnable = FALSE;
+						pHook->pBuffer = pBuffer;
+						pHook->nIP = 0;
+						memset(pHook->oldIPs, 0, ARRAYSIZE(ct.oldIPs));
+						memset(pHook->newIPs, 0, ARRAYSIZE(ct.newIPs));
+						if (ppOriginal != NULL) {
+							*ppOriginal = pHook->pTrampoline;
+						}
+					} else {
+						status = MH_ERROR_MEMORY_ALLOC;
+					}
+
+					if (status != MH_OK) {
+						FreeBuffer(pBuffer);
+					}
+				} else {
+					status = MH_ERROR_MEMORY_ALLOC;
+				}
+			} else {
+				status = MH_ERROR_ALREADY_CREATED;
+			}
+		} else {
+			status = MH_ERROR_NOT_EXECUTABLE;
+		}
+	} else {
+		status = MH_ERROR_NOT_INITIALIZED;
+	}
+
+	LeaveSpinLock();
+
+	return status;
+}
+
 //-------------------------------------------------------------------------
 MH_STATUS WINAPI MH_RemoveHook(LPVOID pTarget) {
 	MH_STATUS status = MH_OK;
@@ -579,7 +666,7 @@ MH_STATUS WINAPI MH_RemoveHook(LPVOID pTarget) {
 			}
 
 			if (status == MH_OK) {
-				FreeBuffer(g_hooks.pItems[pos].pTrampoline);
+				FreeBuffer(g_hooks.pItems[pos].pBuffer);
 				DeleteHookEntry(pos);
 			}
 		} else {

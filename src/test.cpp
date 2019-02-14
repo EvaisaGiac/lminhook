@@ -5,6 +5,7 @@
 #define cdecl_type 0
 #define stdcall_type 1
 #define thiscall_type 2
+#define vtblhook_type 3
 
 int cdecl_test0() { return 0; }
 int cdecl_test1(int a) { return a; }
@@ -28,6 +29,16 @@ struct TestThisCall {
 	int test4(int a, int b, int c, int d) { return a + b + c + d; }
 	int test5(int a, int b, int c, int d, int e) { return a + b + c + d + e; }
 };
+
+struct TestThisCall_Vtbl {
+	virtual int test0() { return 0; }
+	virtual int test1(int a) { return a; }
+	virtual int test2(int a, int b) { return a + b; }
+	virtual int test3(int a, int b, int c) { return a + b + c; }
+	virtual int test4(int a, int b, int c, int d) { return a + b + c + d; }
+	virtual int test5(int a, int b, int c, int d, int e) { return a + b + c + d + e; }
+};
+
 template<typename memberT>
 union u_ptm_cast {
 	memberT pmember;
@@ -134,10 +145,45 @@ void thiscall_tests() {
 	lua_close(l);
 }
 
+void vtblhook_tests() {
+	lua_State *l = luaL_newstate();
+	luaL_openlibs(l);
+	int err = luaL_loadfile(l, "./src/test.lua");
+	if (err) {
+		fprintf(stderr, "%s\n", lua_tostring(l, -1));
+		lua_close(l);
+		return;
+	}
+	TestThisCall_Vtbl tt;
+	DWORD *vtbl = *(DWORD**)&tt;
+	lua_pushinteger(l, vtblhook_type);
+	lua_pushinteger(l, (DWORD)&vtbl[0]);
+	lua_pushinteger(l, (DWORD)&vtbl[1]);
+	lua_pushinteger(l, (DWORD)&vtbl[2]);
+	lua_pushinteger(l, (DWORD)&vtbl[3]);
+	lua_pushinteger(l, (DWORD)&vtbl[4]);
+	lua_pushinteger(l, (DWORD)&vtbl[5]);
+	err = lua_pcall(l, 7, 0, 0);
+	if (err) {
+		fprintf(stderr, "%s\n", lua_tostring(l, -1));
+		lua_close(l);
+		return;
+	}
+	TestThisCall_Vtbl *p = &tt;
+	printf("vtblhook_test0: %d\n", p->test0());
+	printf("vtblhook_test1: %d\n", p->test1(1));
+	printf("vtblhook_test2: %d\n", p->test2(1, 1));
+	printf("vtblhook_test3: %d\n", p->test3(1, 1, 1));
+	printf("vtblhook_test4: %d\n", p->test4(1, 1, 1, 1));
+	printf("vtblhook_test5: %d\n", p->test5(1, 1, 1, 1, 1));
+	lua_close(l);
+}
+
 int main() {
 	cdecl_tests();
 	stdcall_tests();
 	thiscall_tests();
+	vtblhook_tests();
 	system("pause");
 	return 0;
 }

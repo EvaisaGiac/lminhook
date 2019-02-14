@@ -7,6 +7,7 @@
 #define cdecl_type 0
 #define stdcall_type 1
 #define thiscall_type 2
+#define vtblhook_type 3
 
 struct hook {
 	LPVOID pTarget;
@@ -15,6 +16,7 @@ struct hook {
 	int calltype;
 	int callbackRef;
 	lua_State *L;
+	char name[128];
 };
 
 #pragma code_seg(".h")

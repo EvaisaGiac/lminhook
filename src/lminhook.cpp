@@ -5,11 +5,21 @@
 #include "kmpFind.h"
 #include "callbacks.h"
 
+void print(const char *fmt, ...) {
+	va_list va;
+	va_start(va, fmt);
+	char tmp[4096];
+	vsnprintf_s(tmp, sizeof(tmp), fmt, va);
+	va_end(va);
+	OutputDebugStringA(tmp);
+}
+
 const char *call_type_str(int calltype) {
 	switch (calltype) {
 	case cdecl_type: return "CDECL";
 	case stdcall_type: return "STDCALL";
 	case thiscall_type: return "THISCALL";
+	case vtblhook_type: return "VTABLE";
 	default: return "UNKNOW";
 	}
 }
@@ -19,12 +29,17 @@ LPVOID get_cb(int nparams, int calltype) {
 	case cdecl_type: return get_cdecl_cb(nparams);
 	case stdcall_type: return get_stdcall_cb(nparams);
 	case thiscall_type: return get_thiscall_cb(nparams);
+	case vtblhook_type: return get_thiscall_cb(nparams);
 	}
 	return NULL;
 }
 
+int lsetcallback(lua_State *L);
 static int lhook(lua_State *L) {
 	hook *h = (hook *)lua_touserdata(L, 1);
+	if (lua_gettop(L) > 1) {
+		lsetcallback(L);
+	}
 	if (h != NULL) {
 		MH_EnableHook(h->pTarget);
 	}
@@ -35,7 +50,9 @@ static int lunhook(lua_State *L) {
 	hook *h = (hook *)lua_touserdata(L, 1);
 	if (h != NULL) {
 		MH_DisableHook(h->pTarget);
-		luaL_unref(L, LUA_REGISTRYINDEX, h->callbackRef);
+		if (h->callbackRef != -1) {
+			luaL_unref(L, LUA_REGISTRYINDEX, h->callbackRef);
+		}
 	}
 	return 0;
 }
@@ -48,17 +65,25 @@ static int lcall_original(lua_State *L) {
 			result = cdeclcall_original_fn(h);
 		} else if (h->calltype == stdcall_type) {
 			result = stdcall_original_fn(h);
-		} else if (h->calltype == thiscall_type) {
+		} else if (h->calltype == thiscall_type || h->calltype == vtblhook_type) {
 			result = thiscall_original_fn(h);
 		}
 		lua_pushinteger(L, (lua_Integer)result);
-		return 1;
+	} else {
+		lua_pushinteger(L, 0);
 	}
-	return 0;
+	return 1;
 }
 
 static int lgc(lua_State *L) {
-	return lunhook(L);
+	hook *h = (hook *)lua_touserdata(L, 1);
+	if (h != NULL) {
+		MH_RemoveHook(h->pTarget);
+		if (h->callbackRef != -1) {
+			luaL_unref(L, LUA_REGISTRYINDEX, h->callbackRef);
+		}
+	}
+	return 0;
 }
 
 static int lcalltype(lua_State *L) {
@@ -74,7 +99,9 @@ static int lsetcallback(lua_State *L) {
 	hook *h = (hook *)lua_touserdata(L, 1);
 	luaL_checktype(L, 2, LUA_TFUNCTION);
 	if (h != NULL) {
-		luaL_unref(L, LUA_REGISTRYINDEX, h->callbackRef);
+		if (h->callbackRef != -1) {
+			luaL_unref(L, LUA_REGISTRYINDEX, h->callbackRef);
+		}
 		lua_pushvalue(L, 2);
 		h->callbackRef = luaL_ref(L, LUA_REGISTRYINDEX);
 	}
@@ -147,11 +174,16 @@ static int lcreatehook(lua_State *L) {
 	}
 	int nparams = (int)luaL_checkinteger(L, 2);
 	int calltype = cdecl_type;
+	bool hasCallbackFunc = false;
 	if (lua_isnumber(L, 3)) {
 		calltype = (int)lua_tointeger(L, 3);
-		luaL_checktype(L, 4, LUA_TFUNCTION);
-	} else {
+		if (lua_gettop(L) == 4 && !lua_isnil(L, 4)) {
+			luaL_checktype(L, 4, LUA_TFUNCTION);
+			hasCallbackFunc = true;
+		}
+	} else if (!lua_isnil(L, 3)) {
 		luaL_checktype(L, 3, LUA_TFUNCTION);
+		hasCallbackFunc = true;
 	}
 	LPVOID pOriginal = NULL;
 	LPVOID pDetour = get_cb(nparams, calltype);
@@ -161,18 +193,23 @@ static int lcreatehook(lua_State *L) {
 	hook *h = (hook*)lua_newuserdata(L, sizeof(hook));
 	MH_STATUS s;
 	LPVOID target;
-	if (lua_isinteger(L, 1)) {
+	if (calltype == vtblhook_type) {
 		target = (LPVOID)luaL_checkinteger(L, 1);
-		s = MH_CreateHook((LPVOID)target, pDetour, &pOriginal, h);
+		s = MH_CreateHookFuncTable((LPVOID)target, pDetour, &pOriginal, h);
 	} else {
-		size_t len = 0;
-		const char *p = lua_tolstring(L, 1, &len);
-		const char *pp = strchr(p, ':');
-		if (pp == NULL) {
-			luaL_error(L, "invalid hook address");
+		if (lua_isinteger(L, 1)) {
+			target = (LPVOID)luaL_checkinteger(L, 1);
+			s = MH_CreateHook((LPVOID)target, pDetour, &pOriginal, h);
+		} else {
+			size_t len = 0;
+			const char *p = lua_tolstring(L, 1, &len);
+			const char *pp = strchr(p, ':');
+			if (pp == NULL) {
+				luaL_error(L, "invalid hook address");
+			}
+			std::string moduleName(p, pp - p), funcName(pp + 1);
+			s = MH_CreateHookApiEx(moduleName.c_str(), funcName.c_str(), pDetour, &pOriginal, &target, h);
 		}
-		std::string moduleName(p, pp - p), funcName(pp + 1);
-		s = MH_CreateHookApiEx(moduleName.c_str(), funcName.c_str(), pDetour, &pOriginal, &target, h);
 	}
 	if (s == MH_OK) {
 		h->nparams = nparams;
@@ -180,8 +217,12 @@ static int lcreatehook(lua_State *L) {
 		h->pOriginal = pOriginal;
 		h->pTarget = (LPVOID)target;
 		h->L = L;
-		lua_pushvalue(L, lua_isnumber(L, 3) ? 4 : 3);
-		h->callbackRef = luaL_ref(L, LUA_REGISTRYINDEX);
+		if (hasCallbackFunc) {
+			lua_pushvalue(L, lua_isnumber(L, 3) ? 4 : 3);
+			h->callbackRef = luaL_ref(L, LUA_REGISTRYINDEX);
+		} else {
+			h->callbackRef = -1;
+		}
 		minhook_meta(L);
 		register_hook(h);
 		return 1;
@@ -194,11 +235,14 @@ static int lkmdfind(lua_State *L) {
 	int startAddr = (int)luaL_checkinteger(L, 1);
 	int nCount = (int)luaL_checkinteger(L, 2);
 	const char *patn = luaL_checkstring(L, 3);
+	print("startAddr=%08X,nCount=%08X,patn=%s", startAddr, nCount, patn);
 	int pos = kmpFind::Find((const unsigned char *)startAddr, nCount, patn);
 	if (pos >= 0) {
+		print("lkmdfind ok: %08X", pos + startAddr);
 		lua_pushinteger(L, pos + startAddr);
 		return 1;
 	}
+	print("lkmdfind failed");
 	return 0;
 }
 
@@ -221,6 +265,8 @@ extern "C" LUAMOD_API int luaopen_minhook(lua_State *L) {
 	lua_setfield(L, -2, "STDCALL");
 	lua_pushinteger(L, thiscall_type);
 	lua_setfield(L, -2, "THISCALL");
+	lua_pushinteger(L, vtblhook_type);
+	lua_setfield(L, -2, "VTBLHOOK");
 
 	lua_newtable(L); // hook register weak table
 	lua_newtable(L); // metatable={}

@@ -1,6 +1,7 @@
 ﻿#include "lminhook.h"
 #include "callbacks.h"
 #include <functional>
+#define CALL_MEMBER_FN(object, ptrToMember)  ((object)->*(ptrToMember))
 
 int traceback(lua_State *L) {
 	const char *msg = lua_tostring(L, 1);
@@ -13,6 +14,14 @@ int traceback(lua_State *L) {
 }
 
 DWORD WINAPI cb_0(hook *h) {
+	if (h->callbackRef == -1) {
+		if (h->calltype == cdecl_type) {
+			return ((CDECL_FUNC0)h->pOriginal)();
+		} else if (h->calltype == stdcall_type) {
+			return ((STDCALL_FUNC0)h->pOriginal)();
+		}
+		return 0;
+	}
 	DWORD r = 0;
 	lua_State *L = h->L;
 	int top = lua_gettop(L);
@@ -38,6 +47,18 @@ DWORD WINAPI cb_0(hook *h) {
 }
 
 DWORD WINAPI cb_1(hook *h, DWORD a1) {
+	if (h->callbackRef == -1) {
+		if (h->calltype == cdecl_type) {
+			return ((CDECL_FUNC1)h->pOriginal)(a1);
+		} else if (h->calltype == stdcall_type) {
+			return ((STDCALL_FUNC1)h->pOriginal)(a1);
+		} else if (h->calltype == thiscall_type || h->calltype == vtblhook_type) {
+			ThisCallPtr p;
+			p.val = h->pOriginal;
+			return CALL_MEMBER_FN((ThisCallObj *)a1, p.f0)();
+		}
+		return 0;
+	}
 	DWORD r = 0;
 	lua_State *L = h->L;
 	int top = lua_gettop(L);
@@ -64,6 +85,18 @@ DWORD WINAPI cb_1(hook *h, DWORD a1) {
 }
 
 DWORD WINAPI cb_2(hook *h, DWORD a1, DWORD a2) {
+	if (h->callbackRef == -1) {
+		if (h->calltype == cdecl_type) {
+			return ((CDECL_FUNC2)h->pOriginal)(a1, a2);
+		} else if (h->calltype == stdcall_type) {
+			return ((STDCALL_FUNC2)h->pOriginal)(a1, a2);
+		} else if (h->calltype == thiscall_type || h->calltype == vtblhook_type) {
+			ThisCallPtr p;
+			p.val = h->pOriginal;
+			return CALL_MEMBER_FN((ThisCallObj *)a1, p.f1)(a2);
+		}
+		return 0;
+	}
 	DWORD r = 0;
 	lua_State *L = h->L;
 	int top = lua_gettop(L);
@@ -91,6 +124,18 @@ DWORD WINAPI cb_2(hook *h, DWORD a1, DWORD a2) {
 }
 
 DWORD WINAPI cb_3(hook *h, DWORD a1, DWORD a2, DWORD a3) {
+	if (h->callbackRef == -1) {
+		if (h->calltype == cdecl_type) {
+			return ((CDECL_FUNC3)h->pOriginal)(a1, a2, a3);
+		} else if (h->calltype == stdcall_type) {
+			return ((STDCALL_FUNC3)h->pOriginal)(a1, a2, a3);
+		} else if (h->calltype == thiscall_type || h->calltype == vtblhook_type) {
+			ThisCallPtr p;
+			p.val = h->pOriginal;
+			return CALL_MEMBER_FN((ThisCallObj *)a1, p.f2)(a2, a3);
+		}
+		return 0;
+	}
 	DWORD r = 0;
 	lua_State *L = h->L;
 	int top = lua_gettop(L);
@@ -119,6 +164,18 @@ DWORD WINAPI cb_3(hook *h, DWORD a1, DWORD a2, DWORD a3) {
 }
 
 DWORD WINAPI cb_4(hook *h, DWORD a1, DWORD a2, DWORD a3, DWORD a4) {
+	if (h->callbackRef == -1) {
+		if (h->calltype == cdecl_type) {
+			return ((CDECL_FUNC4)h->pOriginal)(a1, a2, a3, a4);
+		} else if (h->calltype == stdcall_type) {
+			return ((STDCALL_FUNC4)h->pOriginal)(a1, a2, a3, a4);
+		} else if (h->calltype == thiscall_type || h->calltype == vtblhook_type) {
+			ThisCallPtr p;
+			p.val = h->pOriginal;
+			return CALL_MEMBER_FN((ThisCallObj *)a1, p.f3)(a2, a3, a4);
+		}
+		return 0;
+	}
 	DWORD r = 0;
 	lua_State *L = h->L;
 	int top = lua_gettop(L);
@@ -148,6 +205,18 @@ DWORD WINAPI cb_4(hook *h, DWORD a1, DWORD a2, DWORD a3, DWORD a4) {
 }
 
 DWORD WINAPI cb_5(hook *h, DWORD a1, DWORD a2, DWORD a3, DWORD a4, DWORD a5) {
+	if (h->callbackRef == -1) {
+		if (h->calltype == cdecl_type) {
+			return ((CDECL_FUNC5)h->pOriginal)(a1, a2, a3, a4, a5);
+		} else if (h->calltype == stdcall_type) {
+			return ((STDCALL_FUNC5)h->pOriginal)(a1, a2, a3, a4, a5);
+		} else if (h->calltype == thiscall_type || h->calltype == vtblhook_type) {
+			ThisCallPtr p;
+			p.val = h->pOriginal;
+			return CALL_MEMBER_FN((ThisCallObj *)a1, p.f4)(a2, a3, a4, a5);
+		}
+		return 0;
+	}
 	DWORD r = 0;
 	lua_State *L = h->L;
 	int top = lua_gettop(L);
@@ -178,6 +247,14 @@ DWORD WINAPI cb_5(hook *h, DWORD a1, DWORD a2, DWORD a3, DWORD a4, DWORD a5) {
 }
 
 DWORD WINAPI cb_6(hook *h, DWORD a1, DWORD a2, DWORD a3, DWORD a4, DWORD a5, DWORD a6) {
+	if (h->callbackRef == -1) {
+		if (h->calltype == thiscall_type || h->calltype == vtblhook_type) {
+			ThisCallPtr p;
+			p.val = h->pOriginal;
+			return CALL_MEMBER_FN((ThisCallObj *)a1, p.f5)(a2, a3, a4, a5, a6);
+		}
+		return 0;
+	}
 	DWORD r = 0;
 	lua_State *L = h->L;
 	int top = lua_gettop(L);
@@ -262,7 +339,6 @@ PVOID g_cb_thiscalls[] = {
 #define THIS_CB_PARAM_3 THIS_CB_PARAM_2, (DWORD)lua_tointeger(L, 5)
 #define THIS_CB_PARAM_4 THIS_CB_PARAM_3, (DWORD)lua_tointeger(L, 6)
 #define THIS_CB_PARAM_5 THIS_CB_PARAM_4, (DWORD)lua_tointeger(L, 7)
-#define CALL_MEMBER_FN(object, ptrToMember)  ((object)->*(ptrToMember))
 DWORD thiscall_original_fn(hook *h) {
 	ThisCallPtr p;
 	lua_State *L = h->L;

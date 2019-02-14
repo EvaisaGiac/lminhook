@@ -141,6 +141,8 @@ extern "C"
     MH_STATUS WINAPI MH_CreateHookApiEx(
         LPCSTR pszModule, LPCSTR pszProcName, LPVOID pDetour, LPVOID *ppOriginal, LPVOID *ppTarget, LPVOID ud);
 
+	MH_STATUS WINAPI MH_CreateHookFuncTable(LPVOID pTarget, LPVOID pDetour, LPVOID *ppOriginal, LPVOID ud);
+
     // Removes an already created hook.
     // Parameters:
     //   pTarget [in] A pointer to the target function.

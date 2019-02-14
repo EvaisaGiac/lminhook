@@ -120,6 +120,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>LUA_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\minhook\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -130,6 +131,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>LUA_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\minhook\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -143,6 +145,7 @@
       <PreprocessorDefinitions>LUA_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\minhook\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WholeProgramOptimization>false</WholeProgramOptimization>
+      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link />
     <Link />
@@ -160,6 +163,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>LUA_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\minhook\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
