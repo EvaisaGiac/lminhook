@@ -57,22 +57,26 @@ static int lunhook(lua_State *L) {
 	return 0;
 }
 
-static int lcall_original(lua_State *L) {
-	hook *h = (hook *)lua_touserdata(L, 1);
+static int _call_original(lua_State *L, hook *h) {
 	if (h != NULL) {
 		DWORD result = 0;
 		if (h->calltype == cdecl_type) {
-			result = cdeclcall_original_fn(h);
+			result = cdeclcall_original_fn(h, L);
 		} else if (h->calltype == stdcall_type) {
-			result = stdcall_original_fn(h);
+			result = stdcall_original_fn(h, L);
 		} else if (h->calltype == thiscall_type || h->calltype == vtblhook_type) {
-			result = thiscall_original_fn(h);
+			result = thiscall_original_fn(h, L);
 		}
 		lua_pushinteger(L, (lua_Integer)result);
 	} else {
 		lua_pushinteger(L, 0);
 	}
 	return 1;
+}
+
+static int lcall_original(lua_State *L) {
+	hook *h = (hook *)lua_touserdata(L, 1);
+	return _call_original(L, h);
 }
 
 static int lgc(lua_State *L) {
@@ -108,6 +112,38 @@ static int lsetcallback(lua_State *L) {
 	return 0;
 }
 
+static int lecx(lua_State *L) {
+	hook *h = (hook *)lua_touserdata(L, 1);
+	if (h != NULL) {
+		lua_pushinteger(L, h->Ecx);
+		return 1;
+	}
+	return 0;
+}
+
+static int lsetresult(lua_State *L) {
+	hook *h = (hook *)lua_touserdata(L, 1);
+	if (h != NULL) {
+		if (lua_gettop(L) < 2 || lua_isnil(L, 2)) {
+			h->result = 0;
+			h->hasResult = false;
+		} else {
+			h->result = (int)luaL_checkinteger(L, 2);
+			h->hasResult = true;
+		}
+	}
+	return 0;
+}
+
+static int lgetresult(lua_State *L) {
+	hook *h = (hook *)lua_touserdata(L, 1);
+	if (h != NULL && h->hasResult) {
+		lua_pushinteger(L, h->result);
+		return 1;
+	}
+	return 0;
+}
+
 static void minhook_meta(lua_State *L) {
 	if (luaL_newmetatable(L, "minhook")) {
 		luaL_Reg l[] = {
@@ -115,6 +151,9 @@ static void minhook_meta(lua_State *L) {
 			{ "unhook", lunhook },
 			{ "calltype", lcalltype },
 			{ "setcallback", lsetcallback },
+			{ "ecx", lecx },
+			{ "setresult", lsetresult },
+			{ "getresult", lgetresult },
 			{ NULL, NULL },
 		};
 		luaL_newlib(L, l);
@@ -216,6 +255,9 @@ static int lcreatehook(lua_State *L) {
 		h->calltype = calltype;
 		h->pOriginal = pOriginal;
 		h->pTarget = (LPVOID)target;
+		h->Ecx = 0;
+		h->result = 0;
+		h->hasResult = false;
 		h->L = L;
 		if (hasCallbackFunc) {
 			lua_pushvalue(L, lua_isnumber(L, 3) ? 4 : 3);
@@ -246,6 +288,71 @@ static int lkmdfind(lua_State *L) {
 	return 0;
 }
 
+static int lcall_original_wrap(lua_State *L) {
+	hook_wrap *h = (hook_wrap *)lua_touserdata(L, 1);
+	return _call_original(L, h->pHook);
+}
+
+static int lsetresult_wrap(lua_State *L) {
+	hook_wrap *ph = (hook_wrap *)lua_touserdata(L, 1);
+	if (ph != NULL) {
+		hook *h = ph->pHook;
+		if (lua_gettop(L) < 2 || lua_isnil(L, 2)) {
+			h->result = 0;
+			h->hasResult = false;
+		} else {
+			h->result = (int)luaL_checkinteger(L, 2);
+			h->hasResult = true;
+		}
+	}
+	return 0;
+}
+
+static int lgetresult_wrap(lua_State *L) {
+	hook_wrap *ph = (hook_wrap *)lua_touserdata(L, 1);
+	if (ph != NULL && ph->pHook->hasResult) {
+		lua_pushinteger(L, ph->pHook->result);
+		return 1;
+	}
+	return 0;
+}
+
+static void minhook_wrap_meta(lua_State *L) {
+	if (luaL_newmetatable(L, "minhook_wrap")) {
+		luaL_Reg l[] = {
+			{ "setresult", lsetresult_wrap },
+			{ "getresult", lgetresult_wrap },
+			{ NULL, NULL },
+		};
+		luaL_newlib(L, l);
+		lua_setfield(L, -2, "__index");
+
+		lua_pushcfunction(L, lcall_original_wrap);
+		lua_setfield(L, -2, "__call");
+	}
+	lua_setmetatable(L, -2);
+}
+
+static int lpack(lua_State *L) {
+	hook *h = (hook *)lua_touserdata(L, 1);
+	if (h != NULL) {
+		lua_pushinteger(L, (int)h);
+		return 1;
+	}
+	return 0;
+}
+
+static int lunpack(lua_State *L) {
+	hook *h = (hook *)luaL_checkinteger(L, 1);
+	if (h != NULL) {
+		hook_wrap *ph = (hook_wrap*)lua_newuserdata(L, sizeof(hook_wrap));
+		ph->pHook = h;
+		minhook_wrap_meta(L);
+		return 1;
+	}
+	return 0;
+}
+
 extern "C" LUAMOD_API int luaopen_minhook(lua_State *L) {
 	luaL_checkversion(L);
 	luaL_Reg l[] = {
@@ -253,8 +360,12 @@ extern "C" LUAMOD_API int luaopen_minhook(lua_State *L) {
 		{ "uninitialize", luninitialize },
 		{ "create", lcreatehook },
 		{ "kmdfind", lkmdfind },
-		{"showconsole", lshowconsole},
-		{"hideconsole", lhideconsole},
+		{ "showconsole", lshowconsole },
+		{ "hideconsole", lhideconsole },
+		{ "pack", lpack },
+		{ "unpack", lunpack },
+		{ "setresult", lsetresult_wrap },
+		{ "getresult", lgetresult_wrap },
 		{ NULL, NULL },
 	};
 	luaL_newlib(L, l);

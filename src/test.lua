@@ -6,8 +6,13 @@ local calltype, args = f(...)
 
 minhook.initialize()
 local callback = function(hook, ...)
-	io.write(string.format("(lua hook, calltype[%s], paramCount[%d])", hook:calltype(), #{...}))
-	return hook(...)
+	io.write(string.format("%d > ", #{...}))
+	local whook = minhook.unpack(minhook.pack(hook))
+	whook:setresult()
+	local result = whook(...)
+	whook:setresult(result)
+	assert(whook:getresult() == result)
+	return result
 end
 
 for i, v in ipairs(args) do

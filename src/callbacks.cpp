@@ -1,6 +1,7 @@
 ﻿#include "lminhook.h"
 #include "callbacks.h"
 #include <functional>
+#include <assert.h>
 #define CALL_MEMBER_FN(object, ptrToMember)  ((object)->*(ptrToMember))
 
 int traceback(lua_State *L) {
@@ -11,6 +12,14 @@ int traceback(lua_State *L) {
 		lua_pushliteral(L, "(no error message)");
 	}
 	return 1;
+}
+
+void push_first_param(hook *h, int a1) {
+	if (h->calltype == thiscall_type || h->calltype == vtblhook_type) {
+		h->Ecx = a1;
+	} else {
+		lua_pushinteger(h->L, a1); // param1
+	}
 }
 
 DWORD WINAPI cb_0(hook *h) {
@@ -28,15 +37,17 @@ DWORD WINAPI cb_0(hook *h) {
 	do {
 		lua_getglobal(L, IDX_HOOK_REGISTER);
 
-		lua_pushcfunction(L, traceback);
+		if (top == 0) {
+			lua_pushcfunction(L, traceback);
+		}
 
 		lua_rawgeti(L, LUA_REGISTRYINDEX, h->callbackRef); // callback
 		if (!lua_isfunction(L, -1)) break;
 
-		lua_rawgetp(L, -3, h);
+		lua_rawgetp(L, top + 1, h);
 		if (!lua_isuserdata(L, -1)) break; // hook
 
-		if (lua_pcall(h->L, 1, 1, -3)) {
+		if (lua_pcall(h->L, h->nparams + 1, 1, (top == 0) ? 2 : 0)) {
 			fprintf(stderr, "%s\n", lua_tostring(h->L, -1));
 			break;
 		}
@@ -65,16 +76,18 @@ DWORD WINAPI cb_1(hook *h, DWORD a1) {
 	do {
 		lua_getglobal(L, IDX_HOOK_REGISTER);
 
-		lua_pushcfunction(L, traceback);
+		if (top == 0) {
+			lua_pushcfunction(L, traceback);
+		}
 
 		lua_rawgeti(L, LUA_REGISTRYINDEX, h->callbackRef); // callback
 		if (!lua_isfunction(L, -1)) break;
 
-		lua_rawgetp(L, -3, h);
+		lua_rawgetp(L, top + 1, h);
 		if (!lua_isuserdata(L, -1)) break; // hook
 
-		lua_pushinteger(h->L, a1); // param1
-		if (lua_pcall(h->L, 2, 1, -4)) {
+		push_first_param(h, a1); // param1
+		if (lua_pcall(h->L, h->nparams + 1, 1, (top == 0) ? 2 : 0)) {
 			fprintf(stderr, "%s\n", lua_tostring(h->L, -1));
 			break;
 		}
@@ -103,17 +116,19 @@ DWORD WINAPI cb_2(hook *h, DWORD a1, DWORD a2) {
 	do {
 		lua_getglobal(L, IDX_HOOK_REGISTER);
 
-		lua_pushcfunction(L, traceback);
+		if (top == 0) {
+			lua_pushcfunction(L, traceback);
+		}
 
 		lua_rawgeti(L, LUA_REGISTRYINDEX, h->callbackRef); // callback
 		if (!lua_isfunction(L, -1)) break;
 
-		lua_rawgetp(L, -3, h);
+		lua_rawgetp(L, top + 1, h);
 		if (!lua_isuserdata(L, -1)) break; // hook
 
-		lua_pushinteger(h->L, a1); // param1
+		push_first_param(h, a1); // param1
 		lua_pushinteger(h->L, a2); // param2
-		if (lua_pcall(h->L, 3, 1, -5)) {
+		if (lua_pcall(h->L, h->nparams + 1, 1, (top == 0) ? 2 : 0)) {
 			fprintf(stderr, "%s\n", lua_tostring(h->L, -1));
 			break;
 		}
@@ -142,18 +157,20 @@ DWORD WINAPI cb_3(hook *h, DWORD a1, DWORD a2, DWORD a3) {
 	do {
 		lua_getglobal(L, IDX_HOOK_REGISTER);
 
-		lua_pushcfunction(L, traceback);
+		if (top == 0) {
+			lua_pushcfunction(L, traceback);
+		}
 
 		lua_rawgeti(L, LUA_REGISTRYINDEX, h->callbackRef); // callback
 		if (!lua_isfunction(L, -1)) break;
 
-		lua_rawgetp(L, -3, h);
+		lua_rawgetp(L, top + 1, h);
 		if (!lua_isuserdata(L, -1)) break; // hook
 
-		lua_pushinteger(h->L, a1); // param1
+		push_first_param(h, a1); // param1
 		lua_pushinteger(h->L, a2); // param2
 		lua_pushinteger(h->L, a3); // param3
-		if (lua_pcall(h->L, 4, 1, -6)) {
+		if (lua_pcall(h->L, h->nparams + 1, 1, (top == 0) ? 2 : 0)) {
 			fprintf(stderr, "%s\n", lua_tostring(h->L, -1));
 			break;
 		}
@@ -182,19 +199,21 @@ DWORD WINAPI cb_4(hook *h, DWORD a1, DWORD a2, DWORD a3, DWORD a4) {
 	do {
 		lua_getglobal(L, IDX_HOOK_REGISTER);
 
-		lua_pushcfunction(L, traceback);
+		if (top == 0) {
+			lua_pushcfunction(L, traceback);
+		}
 
 		lua_rawgeti(L, LUA_REGISTRYINDEX, h->callbackRef); // callback
 		if (!lua_isfunction(L, -1)) break;
 
-		lua_rawgetp(L, -3, h);
+		lua_rawgetp(L, top + 1, h);
 		if (!lua_isuserdata(L, -1)) break; // hook
 
-		lua_pushinteger(h->L, a1); // param1
+		push_first_param(h, a1); // param1
 		lua_pushinteger(h->L, a2); // param2
 		lua_pushinteger(h->L, a3); // param3
 		lua_pushinteger(h->L, a4); // param4
-		if (lua_pcall(h->L, 5, 1, -7)) {
+		if (lua_pcall(h->L, h->nparams + 1, 1, (top == 0) ? 2 : 0)) {
 			fprintf(stderr, "%s\n", lua_tostring(h->L, -1));
 			break;
 		}
@@ -223,20 +242,22 @@ DWORD WINAPI cb_5(hook *h, DWORD a1, DWORD a2, DWORD a3, DWORD a4, DWORD a5) {
 	do {
 		lua_getglobal(L, IDX_HOOK_REGISTER);
 
-		lua_pushcfunction(L, traceback);
+		if (top == 0) {
+			lua_pushcfunction(L, traceback);
+		}
 
 		lua_rawgeti(L, LUA_REGISTRYINDEX, h->callbackRef); // callback
 		if (!lua_isfunction(L, -1)) break;
 
-		lua_rawgetp(L, -3, h);
+		lua_rawgetp(L, top + 1, h);
 		if (!lua_isuserdata(L, -1)) break; // hook
 
-		lua_pushinteger(h->L, a1); // param1
+		push_first_param(h, a1); // param1
 		lua_pushinteger(h->L, a2); // param2
 		lua_pushinteger(h->L, a3); // param3
 		lua_pushinteger(h->L, a4); // param4
 		lua_pushinteger(h->L, a5); // param5
-		if (lua_pcall(h->L, 6, 1, -8)) {
+		if (lua_pcall(h->L, h->nparams + 1, 1, (top == 0) ? 2 : 0)) {
 			fprintf(stderr, "%s\n", lua_tostring(h->L, -1));
 			break;
 		}
@@ -261,21 +282,23 @@ DWORD WINAPI cb_6(hook *h, DWORD a1, DWORD a2, DWORD a3, DWORD a4, DWORD a5, DWO
 	do {
 		lua_getglobal(L, IDX_HOOK_REGISTER);
 
-		lua_pushcfunction(L, traceback);
+		if (top == 0) {
+			lua_pushcfunction(L, traceback);
+		}
 
 		lua_rawgeti(L, LUA_REGISTRYINDEX, h->callbackRef); // callback
 		if (!lua_isfunction(L, -1)) break;
 
-		lua_rawgetp(L, -3, h);
+		lua_rawgetp(L, top + 1, h);
 		if (!lua_isuserdata(L, -1)) break; // hook
 
-		lua_pushinteger(h->L, a1); // param1
+		push_first_param(h, a1); // param1
 		lua_pushinteger(h->L, a2); // param2
 		lua_pushinteger(h->L, a3); // param3
 		lua_pushinteger(h->L, a4); // param4
 		lua_pushinteger(h->L, a5); // param5
 		lua_pushinteger(h->L, a6); // param6
-		if (lua_pcall(h->L, 7, 1, -9)) {
+		if (lua_pcall(h->L, h->nparams + 1, 1, (top == 0) ? 2 : 0)) {
 			fprintf(stderr, "%s\n", lua_tostring(h->L, -1));
 			break;
 		}
@@ -303,8 +326,7 @@ PVOID g_cb_cdecls[] = {
 #define CB_PARAM_4 CB_PARAM_3, (DWORD)lua_tointeger(L, 5)
 #define CB_PARAM_5 CB_PARAM_4, (DWORD)lua_tointeger(L, 6)
 
-DWORD cdeclcall_original_fn(hook *h) {
-	lua_State *L = h->L;
+DWORD cdeclcall_original_fn(hook *h, lua_State *L) {
 	switch (h->nparams) {
 	case 0:return ((CDECL_FUNC0)h->pOriginal)();
 	case 1:return ((CDECL_FUNC1)h->pOriginal)(CB_PARAM_1);
@@ -334,15 +356,14 @@ PVOID g_cb_thiscalls[] = {
 	MakeThisCallDetour(cb_5),
 	MakeThisCallDetour(cb_6),
 };
-#define THIS_CB_PARAM_1 (DWORD)lua_tointeger(L, 3)
-#define THIS_CB_PARAM_2 THIS_CB_PARAM_1, (DWORD)lua_tointeger(L, 4)
-#define THIS_CB_PARAM_3 THIS_CB_PARAM_2, (DWORD)lua_tointeger(L, 5)
-#define THIS_CB_PARAM_4 THIS_CB_PARAM_3, (DWORD)lua_tointeger(L, 6)
-#define THIS_CB_PARAM_5 THIS_CB_PARAM_4, (DWORD)lua_tointeger(L, 7)
-DWORD thiscall_original_fn(hook *h) {
+#define THIS_CB_PARAM_1 (DWORD)lua_tointeger(L, 2)
+#define THIS_CB_PARAM_2 THIS_CB_PARAM_1, (DWORD)lua_tointeger(L, 3)
+#define THIS_CB_PARAM_3 THIS_CB_PARAM_2, (DWORD)lua_tointeger(L, 4)
+#define THIS_CB_PARAM_4 THIS_CB_PARAM_3, (DWORD)lua_tointeger(L, 5)
+#define THIS_CB_PARAM_5 THIS_CB_PARAM_4, (DWORD)lua_tointeger(L, 6)
+DWORD thiscall_original_fn(hook *h, lua_State *L) {
 	ThisCallPtr p;
-	lua_State *L = h->L;
-	ThisCallObj *ECX_ = (ThisCallObj *)lua_tointeger(L, 2);
+	ThisCallObj *ECX_ = (ThisCallObj *)h->Ecx;
 	p.val = h->pOriginal;
 	switch (h->nparams) {
 	case 0: return CALL_MEMBER_FN(ECX_, p.f0)();
@@ -374,8 +395,7 @@ PVOID g_cb_stdcalls[] = {
 	MakeStdCallDetour(cb_5),
 };
 
-DWORD stdcall_original_fn(hook *h) {
-	lua_State *L = h->L;
+DWORD stdcall_original_fn(hook *h, lua_State *L) {
 	switch (h->nparams) {
 	case 0:return ((STDCALL_FUNC0)h->pOriginal)();
 	case 1:return ((STDCALL_FUNC1)h->pOriginal)(CB_PARAM_1);

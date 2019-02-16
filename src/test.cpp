@@ -8,35 +8,35 @@
 #define vtblhook_type 3
 
 int cdecl_test0() { return 0; }
-int cdecl_test1(int a) { return a; }
-int cdecl_test2(int a, int b) { return a + b; }
-int cdecl_test3(int a, int b, int c) { return a + b + c; }
-int cdecl_test4(int a, int b, int c, int d) { return a + b + c + d; }
-int cdecl_test5(int a, int b, int c, int d, int e) { return a + b + c + d + e; }
+int cdecl_test1(int a) { return cdecl_test0() + a; }
+int cdecl_test2(int a, int b) { return cdecl_test1(a) + b; }
+int cdecl_test3(int a, int b, int c) { return cdecl_test2(a, b) + c; }
+int cdecl_test4(int a, int b, int c, int d) { return cdecl_test3(a, b, c) + d; }
+int cdecl_test5(int a, int b, int c, int d, int e) { return cdecl_test4(a, b, c, d) + e; }
 
 int WINAPI stdcall_test0() { return 0; }
-int WINAPI stdcall_test1(int a) { return a; }
-int WINAPI stdcall_test2(int a, int b) { return a + b; }
-int WINAPI stdcall_test3(int a, int b, int c) { return a + b + c; }
-int WINAPI stdcall_test4(int a, int b, int c, int d) { return a + b + c + d; }
-int WINAPI stdcall_test5(int a, int b, int c, int d, int e) { return a + b + c + d + e; }
+int WINAPI stdcall_test1(int a) { return stdcall_test0() + a; }
+int WINAPI stdcall_test2(int a, int b) { return stdcall_test1(a) + b; }
+int WINAPI stdcall_test3(int a, int b, int c) { return stdcall_test2(a, b) + c; }
+int WINAPI stdcall_test4(int a, int b, int c, int d) { return stdcall_test3(a, b, c) + d; }
+int WINAPI stdcall_test5(int a, int b, int c, int d, int e) { return stdcall_test4(a, b, c, d) + e; }
 
 struct TestThisCall {
 	int test0() { return 0; }
-	int test1(int a) { return a; }
-	int test2(int a, int b) { return a + b; }
-	int test3(int a, int b, int c) { return a + b + c; }
-	int test4(int a, int b, int c, int d) { return a + b + c + d; }
-	int test5(int a, int b, int c, int d, int e) { return a + b + c + d + e; }
+	int test1(int a) { return test0() + a; }
+	int test2(int a, int b) { return test1(a) + b; }
+	int test3(int a, int b, int c) { return test2(a, b) + c; }
+	int test4(int a, int b, int c, int d) { return test3(a, b, c) + d; }
+	int test5(int a, int b, int c, int d, int e) { return test4(a, b, c, d) + e; }
 };
 
 struct TestThisCall_Vtbl {
 	virtual int test0() { return 0; }
-	virtual int test1(int a) { return a; }
-	virtual int test2(int a, int b) { return a + b; }
-	virtual int test3(int a, int b, int c) { return a + b + c; }
-	virtual int test4(int a, int b, int c, int d) { return a + b + c + d; }
-	virtual int test5(int a, int b, int c, int d, int e) { return a + b + c + d + e; }
+	virtual int test1(int a) { return test0() + a; }
+	virtual int test2(int a, int b) { return test1(a) + b; }
+	virtual int test3(int a, int b, int c) { return test2(a, b) + c; }
+	virtual int test4(int a, int b, int c, int d) { return test3(a, b, c) + d; }
+	virtual int test5(int a, int b, int c, int d, int e) { return test4(a, b, c, d) + e; }
 };
 
 template<typename memberT>

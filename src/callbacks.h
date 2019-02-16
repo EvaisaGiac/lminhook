@@ -31,9 +31,9 @@ union ThisCallPtr {
 	MEM_FUNC5 f5;
 };
 
-DWORD cdeclcall_original_fn(hook *h);
-DWORD stdcall_original_fn(hook *h);
-DWORD thiscall_original_fn(hook *h);
+DWORD cdeclcall_original_fn(hook *h, lua_State *L);
+DWORD stdcall_original_fn(hook *h, lua_State *L);
+DWORD thiscall_original_fn(hook *h, lua_State *L);
 
 LPVOID get_cdecl_cb(int nparams);
 LPVOID get_stdcall_cb(int nparams);

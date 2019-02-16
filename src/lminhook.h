@@ -15,8 +15,15 @@ struct hook {
 	int nparams;
 	int calltype;
 	int callbackRef;
+	int Ecx;
 	lua_State *L;
 	char name[128];
+	int result;
+	bool hasResult;
+};
+
+struct hook_wrap {
+	hook *pHook;
 };
 
 #pragma code_seg(".h")
