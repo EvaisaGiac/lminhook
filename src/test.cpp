@@ -200,11 +200,42 @@ void vtblhook_tests() {
     lua_close(l);
 }
 
+void messagebox_tests() {
+    lua_State *l = luaL_newstate();
+    luaL_openlibs(l);
+    int err = luaL_dostring(l, " \
+        local minhook = require('minhook') \
+        minhook.initialize() \
+        local messagebox_cb = function(hook, ...) \
+            print('in MessageBoxA hook') \
+            result = hook(...) \
+            print('out MessageBoxA hook') \
+            print('==disable MessageBoxA hook') \
+            hook:unhook() \
+            return result \
+        end \
+        local h = minhook.create('user32.dll:MessageBoxA', 4, minhook.STDCALL, messagebox_cb) \
+        h:hook() \
+    ");
+    if (err) {
+        fprintf(stderr, "%s\n", lua_tostring(l, -1));
+        lua_close(l);
+        return;
+    }
+    // hook by lua
+    MessageBoxA(0, "in hook call", "caption", 0);
+
+    // raw call
+    MessageBoxA(0, "not in hook call", "caption", 0);
+    lua_close(l);
+}
+
 int main() {
     cdecl_tests();
     stdcall_tests();
     thiscall_tests();
     vtblhook_tests();
+    messagebox_tests();
     system("pause");
     return 0;
 }
