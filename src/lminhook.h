@@ -10,20 +10,20 @@
 #define vtblhook_type 3
 
 struct hook {
-	LPVOID pTarget;
-	LPVOID pOriginal;
-	int nparams;
-	int calltype;
-	int callbackRef;
-	int Ecx;
-	lua_State *L;
-	char name[128];
-	int result;
-	bool hasResult;
+    LPVOID pTarget;
+    LPVOID pOriginal;
+    int nparams;
+    int calltype;
+    int callbackRef;
+    int Ecx;
+    lua_State *L;
+    char name[128];
+    int result;
+    bool hasResult;
 };
 
 struct hook_wrap {
-	hook *pHook;
+    hook *pHook;
 };
 
 #pragma code_seg(".h")
@@ -37,11 +37,11 @@ typedef DWORD(WINAPI*FUNC6)(hook *, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD);
 
 template< unsigned int unique_no >
 static __declspec(naked) DWORD HookFuncWarp() {
-	__asm {
-		__emit 0E8h;
-		__emit 0; __emit 0; __emit 0; __emit 0;
-		__emit 0; __emit 0; __emit 0; __emit 0;
-	}
+    __asm {
+        __emit 0E8h;
+        __emit 0; __emit 0; __emit 0; __emit 0;
+        __emit 0; __emit 0; __emit 0; __emit 0;
+    }
 }
 
 #define SAVE_FP __asm push ebp __asm mov ebp, esp __asm pushad __asm pushfd
@@ -97,17 +97,17 @@ static __declspec(naked) DWORD HookFuncWarp() {
 // CdeclDetour
 template<typename T>
 static __declspec(naked) DWORD CdeclDetour();
-template<> static __declspec(naked) 
+template<> static __declspec(naked)
 DWORD CdeclDetour<FUNC0>() { SAVE_FP CALL_0 POP_FP RETN(4) }
-template<> static __declspec(naked) 
+template<> static __declspec(naked)
 DWORD CdeclDetour<FUNC1>() { SAVE_FP CALL_1 POP_FP RETN(4) }
-template<> static __declspec(naked) 
+template<> static __declspec(naked)
 DWORD CdeclDetour<FUNC2>() { SAVE_FP CALL_2 POP_FP RETN(4) }
-template<> static __declspec(naked) 
+template<> static __declspec(naked)
 DWORD CdeclDetour<FUNC3>() { SAVE_FP CALL_3 POP_FP RETN(4) }
-template<> static __declspec(naked) 
+template<> static __declspec(naked)
 DWORD CdeclDetour<FUNC4>() { SAVE_FP CALL_4 POP_FP RETN(4) }
-template<> static __declspec(naked) 
+template<> static __declspec(naked)
 DWORD CdeclDetour<FUNC5>() { SAVE_FP CALL_5 POP_FP RETN(4) }
 template<> static __declspec(naked)
 DWORD CdeclDetour<FUNC6>() { SAVE_FP CALL_6 POP_FP RETN(4) }
@@ -151,26 +151,26 @@ DWORD ThisCallDetour<FUNC6>() { SAVE_FP CALL_ECX_5 POP_FP RETN(0x18) }
 
 template<unsigned int unique_no, typename T>
 inline PROC MakeCdeclDetour_(T FUNC) {
-	DWORD(*f1)() = &HookFuncWarp<unique_no>;
-	DWORD(*f2)() = &CdeclDetour<T>;
-	MAKE_FUNC(FUNC);
-	return (PROC)f1;
+    DWORD(*f1)() = &HookFuncWarp<unique_no>;
+    DWORD(*f2)() = &CdeclDetour<T>;
+    MAKE_FUNC(FUNC);
+    return (PROC)f1;
 }
 
 template<unsigned int unique_no, typename T>
 inline PROC MakeStdCallDetour_(T FUNC) {
-	DWORD(*f1)() = &HookFuncWarp<unique_no>;
-	DWORD(*f2)() = &StdCallDetour<T>;
-	MAKE_FUNC(FUNC);
-	return (PROC)f1;
+    DWORD(*f1)() = &HookFuncWarp<unique_no>;
+    DWORD(*f2)() = &StdCallDetour<T>;
+    MAKE_FUNC(FUNC);
+    return (PROC)f1;
 }
 
 template<unsigned int unique_no, typename T>
 inline PROC MakeThisCallDetour_(T FUNC) {
-	DWORD(*f1)() = &HookFuncWarp<unique_no>;
-	DWORD(*f2)() = &ThisCallDetour<T>;
-	MAKE_FUNC(FUNC);
-	return (PROC)f1;
+    DWORD(*f1)() = &HookFuncWarp<unique_no>;
+    DWORD(*f2)() = &ThisCallDetour<T>;
+    MAKE_FUNC(FUNC);
+    return (PROC)f1;
 }
 
 #define MakeCdeclDetour(func) MakeCdeclDetour_<__COUNTER__>(func)

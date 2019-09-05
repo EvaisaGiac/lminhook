@@ -22,13 +22,13 @@ typedef DWORD(ThisCallObj::*MEM_FUNC3)(DWORD, DWORD, DWORD);
 typedef DWORD(ThisCallObj::*MEM_FUNC4)(DWORD, DWORD, DWORD, DWORD);
 typedef DWORD(ThisCallObj::*MEM_FUNC5)(DWORD, DWORD, DWORD, DWORD, DWORD);
 union ThisCallPtr {
-	LPVOID val;
-	MEM_FUNC0 f0;
-	MEM_FUNC1 f1;
-	MEM_FUNC2 f2;
-	MEM_FUNC3 f3;
-	MEM_FUNC4 f4;
-	MEM_FUNC5 f5;
+    LPVOID val;
+    MEM_FUNC0 f0;
+    MEM_FUNC1 f1;
+    MEM_FUNC2 f2;
+    MEM_FUNC3 f3;
+    MEM_FUNC4 f4;
+    MEM_FUNC5 f5;
 };
 
 DWORD cdeclcall_original_fn(hook *h, lua_State *L);
