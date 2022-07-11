@@ -1,4 +1,3 @@
-# lminihook
-绑定minihook到lua，在lua脚本直接下钩子并回调lua函数。
+# lminhook
 
-目前只在win32下测试
+Lua Minhook for LuaJit 2.0.5

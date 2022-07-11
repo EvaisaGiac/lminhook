@@ -4,6 +4,7 @@
 #include <string>
 #include "kmpFind.h"
 #include "callbacks.h"
+#include "compat_layer.h"
 
 void print(const char *fmt, ...) {
     va_list va;
@@ -389,8 +390,8 @@ static int lunpack(lua_State *L) {
     return 0;
 }
 
-extern "C" LUAMOD_API int luaopen_minhook(lua_State *L) {
-    luaL_checkversion(L);
+EXTERN int luaopen_minhook(lua_State *L) {
+    //luaL_checkversion(L);
     luaL_Reg l[] = {
         { "initialize", linitialize },
         { "uninitialize", luninitialize },

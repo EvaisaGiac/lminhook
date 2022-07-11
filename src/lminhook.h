@@ -1,6 +1,10 @@
 ﻿#pragma once
 #include <windows.h>
-#include <lua.hpp>
+extern "C" {
+    #include <lauxlib.h>
+    #include <lua.h>
+}
+#include "compat_layer.h"
 
 #define IDX_HOOK_REGISTER "hook_register"
 

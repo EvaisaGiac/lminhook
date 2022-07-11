@@ -56,6 +56,9 @@
     <ClInclude Include="..\src\callbacks.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\compat_layer.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\minhook\src\buffer.c">
@@ -82,5 +85,11 @@
     <ClCompile Include="..\src\callbacks.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\compat_layer.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>
